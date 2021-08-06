@@ -87,4 +87,4 @@ class LoggerFrame(tk.Frame):
 
 if __name__ == "__main__":
     import os
-    os.system("MainWindow.py")
+    os.system("PokitMeter")
