@@ -4,7 +4,7 @@ from bleak import BleakScanner
 from UUIDs import uuids
 
 from bleak.backends.device import BLEDevice
-from winrt.windows.devices.bluetooth.advertisement import (
+from bleak_winrt.windows.devices.bluetooth.advertisement import (
     BluetoothLEAdvertisementReceivedEventArgs)
 
 
@@ -120,7 +120,7 @@ class ScanFrame(tk.Frame):
         self.btn_connect['state'] = 'disabled'
 
         for device in self.discovered_devices:
-            if device.name == '':
+            if device.name == None:
                 self.device_list.insert('end', device.address)
             else:
                 self.device_list.insert('end', device.name)
