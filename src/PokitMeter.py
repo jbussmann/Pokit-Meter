@@ -93,23 +93,34 @@ class MainWindow(tk.Tk):
 
     async def application_loop(self):
         if self.frames[MultimeterFrame].change_mode_flag:
-            mmFrame = self.frames[MultimeterFrame]
-            mmFrame.change_mode_flag = False
-            print(f"changing mm config to {mmFrame.config}")
+            mm_frame = self.frames[MultimeterFrame]
+            mm_frame.change_mode_flag = False
+            print(f"changing mm config to {mm_frame.config}")
             await self.client.write_gatt_char(
-                uuids['mm_settings'], mmFrame.config, True)
-            await self.client.start_notify(uuids['mm_reading'], mmFrame.mm_reading_notify)
+                uuids['mm_settings'], mm_frame.config, True)
+            await self.client.start_notify(uuids['mm_reading'], mm_frame.read_notification)
 
         if self.frames[DSOFrame].change_mode_flag:
             dso_frame = self.frames[DSOFrame]
             dso_frame.change_mode_flag = False            
             print(f"changing dso config to {dso_frame.config}")
-            await dso_frame.read_meta(self.client)
+            # await dso_frame.read_meta(self.client)
             await self.client.write_gatt_char(
                 uuids['dso_settings'], dso_frame.config, True)
+            # await dso_frame.read_meta(self.client)
+            await self.client.start_notify(uuids['dso_reading'], dso_frame.read_notification)
             await dso_frame.read_meta(self.client)
-            await self.client.start_notify(uuids['dso_reading'], dso_frame.dso_reading_notify)
-            await dso_frame.read_meta(self.client)
+
+        if self.frames[LoggerFrame].change_mode_flag:
+            logger_frame = self.frames[LoggerFrame]
+            logger_frame.change_mode_flag = False            
+            print(f"changing logger config to {logger_frame.config}")
+            # await logger_frame.read_meta(self.client)
+            await self.client.write_gatt_char(
+                uuids['logger_settings'], logger_frame.config, True)
+            # await logger_frame.read_meta(self.client)
+            await self.client.start_notify(uuids['logger_reading'], logger_frame.read_notification)
+            await logger_frame.read_meta(self.client)
 
         await asyncio.sleep(0.1)
 

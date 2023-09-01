@@ -35,11 +35,11 @@ class MultimeterFrame(tk.Frame):
     def calc_config(self, event):
         mode = event.widget.current() + 1
         range = 0
-        intervall = 512
-        self.config = struct.pack('< B B L', mode, range, intervall)
+        interval = 512
+        self.config = struct.pack('< B B L', mode, range, interval)
         self.change_mode_flag = True
 
-    def mm_reading_notify(self, sender, data):
+    def read_notification(self, sender, data):
         print("mm notified")
         value = struct.unpack('f', data[1:5])[0]
         print(value)
@@ -48,4 +48,6 @@ class MultimeterFrame(tk.Frame):
 
 if __name__ == "__main__":
     import os
-    os.system("PokitMeter")
+    current_dir = os.path.dirname(__file__)
+    main_dir = current_dir[:-4]
+    os.system(f"{main_dir}/.venv/Scripts/python.exe {current_dir}/PokitMeter.py")
