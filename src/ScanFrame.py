@@ -74,8 +74,7 @@ class ScanFrame(tk.Frame):
         # self.parent.connect_flag = True
 
     async def scan(self):
-        self.scanner = BleakScanner()
-        self.scanner.register_detection_callback(self.detection_callback)
+        self.scanner = BleakScanner(self.detection_callback)
         await self.scanner.start()
         while(not self.stop_flag):
             await asyncio.sleep(0.01)
@@ -86,7 +85,7 @@ class ScanFrame(tk.Frame):
         is_pokit_meter = False
         is_new_device = True
 
-        if uuids['pokit_service'] in device.metadata['uuids']:
+        if uuids['pokit_service'] in advertisement_data.service_uuids:
             is_pokit_meter = True
         else:
             self.update_names()
