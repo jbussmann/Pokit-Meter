@@ -44,10 +44,18 @@ class MultimeterFrame(tk.Frame):
         value = struct.unpack('f', data[1:5])[0]
         print(value)
         self.label_1['text'] = f"{value:.3f}"
+    
+    async def change_mode(self, client):
+        if self.change_mode_flag:
+            self.change_mode_flag = False
+            print(f"changing mm config to {self.config}")
+            await client.write_gatt_char(
+                uuids['mm_settings'], self.config, True)
+            await client.start_notify(uuids['mm_reading'], self.read_notification)
 
 
 if __name__ == "__main__":
     import os
     current_dir = os.path.dirname(__file__)
     main_dir = current_dir[:-4]
-    os.system(f"{main_dir}/.venv/Scripts/python.exe {current_dir}/PokitMeter.py")
+    os.system(f"{main_dir}\.venv\Scripts\python.exe {current_dir}\PokitMeter.py")

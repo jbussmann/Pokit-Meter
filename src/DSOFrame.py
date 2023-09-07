@@ -116,10 +116,19 @@ class DSOFrame(tk.Frame):
             self.axes.clear()
             self.axes.plot(x, y)
             self.plotcanvas.draw()
+    
+    async def change_mode(self, client):
+        if self.change_mode_flag:
+            self.change_mode_flag = False            
+            print(f"changing dso config to {self.config}")
+            await client.write_gatt_char(
+                uuids['dso_settings'], self.config, True)
+            await client.start_notify(uuids['dso_reading'], self.notification_callback)
+            # await self.read_meta(client)
 
 
 if __name__ == "__main__":
     import os
     current_dir = os.path.dirname(__file__)
     main_dir = current_dir[:-4]
-    os.system(f"{main_dir}/.venv/Scripts/python.exe {current_dir}/PokitMeter.py")
+    os.system(f"{main_dir}\.venv\Scripts\python.exe {current_dir}\PokitMeter.py")

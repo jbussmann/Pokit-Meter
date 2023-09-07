@@ -61,15 +61,17 @@ class ScanFrame(tk.Frame):
         index = self.device_list.curselection()
         index = index[0]
         device = self.discovered_devices[index]
-        self.parent.device = device
-        self.parent.connect_flag = True
+        self.parent.set_device(device)
+        # self.parent.device = device
+        # self.parent.connect_flag = True
 
     def connect_dummy(self):
         dummy = BLEDevice("90:FD:9F:5C:B9:32", "dummy")
         dummy.details = BluetoothLEAdvertisementReceivedEventArgs
         dummy.details.bluetooth_address = 159418974779698
-        self.parent.device = dummy
-        self.parent.connect_flag = True
+        self.parent.set_device(dummy)
+        # self.parent.device = dummy
+        # self.parent.connect_flag = True
 
     async def scan(self):
         self.scanner = BleakScanner()
@@ -141,4 +143,4 @@ if __name__ == "__main__":
     import os
     current_dir = os.path.dirname(__file__)
     main_dir = current_dir[:-4]
-    os.system(f"{main_dir}/.venv/Scripts/python.exe {current_dir}/PokitMeter.py")
+    os.system(f"{main_dir}\.venv\Scripts\python.exe {current_dir}\PokitMeter.py")

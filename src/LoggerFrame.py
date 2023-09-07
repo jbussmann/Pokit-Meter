@@ -138,22 +138,18 @@ class LoggerFrame(tk.Frame):
             self.axes.plot(x, y)
             self.plotcanvas.draw()
 
+    async def change_mode(self, client):
+        if self.change_mode_flag:
+            self.change_mode_flag = False            
+            print(f"changing logger config to {self.config}")
+            await client.write_gatt_char(
+                uuids['logger_settings'], self.config, True)
+            await client.start_notify(uuids['logger_reading'], self.read_notification)
+            await self.read_meta(client)
+
 
 if __name__ == "__main__":
     import os
     current_dir = os.path.dirname(__file__)
     main_dir = current_dir[:-4]
-    os.system(f"{main_dir}/.venv/Scripts/python.exe {current_dir}/PokitMeter.py")
-
-
-
-# # import everything from tkinter module 
-# from tkinter import * 
-# # create a tkinter window 
-# root = Tk() 
-# # Open window having dimension 100x100 
-# root.geometry('100x100') 
-# # Create a Button 
-# btn = Button(root, text = 'Click me !', bd = '5', command = root.destroy) 
-# # Set the position of button on the top of window. 
-# btn.pack(side = 'top') root.mainloop()
+    os.system(f"{main_dir}\.venv\Scripts\python.exe {current_dir}\PokitMeter.py")

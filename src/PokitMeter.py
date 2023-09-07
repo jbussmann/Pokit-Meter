@@ -20,10 +20,10 @@ class MainWindow(tk.Tk):
         width = 600
         height = 400
 
-        self.app_exit_flag = False
+        self.is_app_running = True
         self.connect_flag = False
         self.device = BLEDevice
-        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.protocol("WM_DELETE_WINDOW", self.window_close)
         self.loop = loop
         self.gui_task = self.loop.create_task(self.gui_loop())
         self.connection_task = self.loop.create_task(self.connection_loop())
@@ -40,15 +40,11 @@ class MainWindow(tk.Tk):
         self.control_frame.grid(row=0, column=0, padx='5', pady='5', sticky='nesw')
 
         self.frames = {}
-        # self.scan_frame = ScanFrame(self, loop)
-        # self.info_frame = InfoFrame(self, loop)
-        # self.mm_frame = MultimeterFrame(self, loop)
-        # self.dso_frame = DSOFrame(self, loop)
 
-        for frame in (ScanFrame, InfoFrame, MultimeterFrame, DSOFrame, LoggerFrame):
-            f = frame(self, loop)
-            f.grid(row=1, column=0, padx='5', pady='5', sticky='nesw')
-            self.frames[frame] = f
+        for f in (ScanFrame, InfoFrame, MultimeterFrame, DSOFrame, LoggerFrame):
+            frame = f(self, loop)
+            frame.grid(row=1, column=0, padx='5', pady='5', sticky='nesw')
+            self.frames[f] = frame
 
         self.raise_frame('scan')
 
@@ -70,70 +66,46 @@ class MainWindow(tk.Tk):
             await asyncio.sleep(0.02)
 
     async def connection_loop(self):
-        while True:
+        while self.is_app_running:
             if self.connect_flag:
                 self.connect_flag = False
                 await self.connect_device()
             await asyncio.sleep(0.1)
+        print("ending loop, closing app")
+        self.loop.stop()
 
     async def connect_device(self):
         print(f"connecting to {self.device}")
         self.client = BleakClient(self.device)
         try:
-            await self.client.connect(timeout=300.0)
+            await self.client.connect(timeout=30.0)
             self.raise_frame('info')
             await self.frames[InfoFrame].read_info(self.client)
-            while not self.app_exit_flag:
-                await self.application_loop()
+            while self.is_app_running:
+                # await self.frame_handler()
+                await self.frames[MultimeterFrame].change_mode(self.client)
+                await self.frames[DSOFrame].change_mode(self.client)
+                await self.frames[LoggerFrame].change_mode(self.client)
+                await asyncio.sleep(0.1)
+
         except Exception as e:
             print(f"Terminating with Exception {e}")
         finally:
             print("disconnecting")
             await self.client.disconnect()
+            self.raise_frame('scan')
 
-    async def application_loop(self):
-        if self.frames[MultimeterFrame].change_mode_flag:
-            mm_frame = self.frames[MultimeterFrame]
-            mm_frame.change_mode_flag = False
-            print(f"changing mm config to {mm_frame.config}")
-            await self.client.write_gatt_char(
-                uuids['mm_settings'], mm_frame.config, True)
-            await self.client.start_notify(uuids['mm_reading'], mm_frame.read_notification)
+    def window_close(self):
+        self.is_app_running = False
 
-        if self.frames[DSOFrame].change_mode_flag:
-            dso_frame = self.frames[DSOFrame]
-            dso_frame.change_mode_flag = False            
-            print(f"changing dso config to {dso_frame.config}")
-            # await dso_frame.read_meta(self.client)
-            await self.client.write_gatt_char(
-                uuids['dso_settings'], dso_frame.config, True)
-            # await dso_frame.read_meta(self.client)
-            await self.client.start_notify(uuids['dso_reading'], dso_frame.read_notification)
-            await dso_frame.read_meta(self.client)
-
-        if self.frames[LoggerFrame].change_mode_flag:
-            logger_frame = self.frames[LoggerFrame]
-            logger_frame.change_mode_flag = False            
-            print(f"changing logger config to {logger_frame.config}")
-            # await logger_frame.read_meta(self.client)
-            await self.client.write_gatt_char(
-                uuids['logger_settings'], logger_frame.config, True)
-            # await logger_frame.read_meta(self.client)
-            await self.client.start_notify(uuids['logger_reading'], logger_frame.read_notification)
-            await logger_frame.read_meta(self.client)
-
-        await asyncio.sleep(0.1)
-
-    def close(self):
-        self.app_exit_flag = True
-        self.gui_task.cancel()
-        self.connection_task.cancel()
-        self.loop.stop()
+    def set_device(self, device):
+        self.device = device
+        self.connect_flag = True
 
 
 # Main function, executed when file is invoked directly.
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    MainWindow(loop)
-    loop.run_forever()
-    loop.close()
+    event_loop = asyncio.get_event_loop()
+    MainWindow(event_loop)
+    event_loop.run_forever()
+    event_loop.close()

@@ -30,4 +30,6 @@ class ControlFrame(tk.Frame):
 
 if __name__ == "__main__":
     import os
-    os.system("PokitMeter")
+    current_dir = os.path.dirname(__file__)
+    main_dir = current_dir[:-4]
+    os.system(f"{main_dir}\.venv\Scripts\python.exe {current_dir}\PokitMeter.py")
