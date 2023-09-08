@@ -15,9 +15,8 @@ class DSOFrame(tk.Frame):
         self.parent = parent
         self.loop = loop
         self.change_mode_flag = False
-        self.acquisition_flag = False
-        self.reception_flag = False
         self.config = None
+        self.last_notification = None
         self.metadata = {}
         self.sample_values = numpy.array([])
         # self.transmission_complete = False
@@ -83,19 +82,23 @@ class DSOFrame(tk.Frame):
         window = int(float(self.entry_2.get())*1000)
         # prevent entry of value out of range
         samples = min(int(self.entry_3.get()), 8192)
-        # self.entry_3.delete(0)
-        # self.entry_3.insert(0, str(samples))
+
         self.config = struct.pack(
             '< B f B B L H', command, trigger, mode, range, window, samples)
         # clear previous values
         self.sample_values = numpy.array([])
+        self.metadata = {}
         self.change_mode_flag = True
 
-    def read_notification(self, sender, data):
-        print(data.hex())
-        print("dso notified")
-        values = struct.unpack(f'< {len(data)//2}h', data)
-        self.sample_values = numpy.append(self.sample_values, values)
+    def notification_callback(self, sender, data):
+        if data != self.last_notification:
+            self.last_notification = data
+            print("dso notified")
+            values = struct.unpack(f'< {len(data)//2}h', data)
+            self.sample_values = numpy.append(self.sample_values, values)
+            self.check_completeness()
+        else:
+            print("duplicate notification")
 
     async def read_meta(self, client: BleakClient):
         meta = await client.read_gatt_char(uuids['dso_metadata'])
@@ -107,15 +110,20 @@ class DSOFrame(tk.Frame):
         self.check_completeness()
 
     def check_completeness(self):
-        if len(self.sample_values) == self.metadata["samples"]:
-            print("all samples received")
-            x = numpy.linspace(0, self.metadata["window"], self.metadata["samples"], endpoint=False)
-            print(x.shape)
-            y = numpy.array(self.sample_values) * self.metadata["scale"]
-            print(y.shape)
-            self.axes.clear()
-            self.axes.plot(x, y)
-            self.plotcanvas.draw()
+        if 'samples' in self.metadata:
+            if self.sample_values.size == self.metadata["samples"]:
+                print("all samples received")
+                x = numpy.linspace(0, self.metadata["window"], self.metadata["samples"], endpoint=False)
+                print(x.shape)
+                y = numpy.array(self.sample_values) * self.metadata["scale"]
+                print(y.shape)
+                self.axes.clear()
+                self.axes.plot(x, y)
+                self.plotcanvas.draw()
+            else:
+                print(f"{self.sample_values.size}/{self.metadata['samples']} samples received")
+        else:
+            print(f"{self.sample_values.size} samples received")
     
     async def change_mode(self, client):
         if self.change_mode_flag:
@@ -124,7 +132,7 @@ class DSOFrame(tk.Frame):
             await client.write_gatt_char(
                 uuids['dso_settings'], self.config, True)
             await client.start_notify(uuids['dso_reading'], self.notification_callback)
-            # await self.read_meta(client)
+            await self.read_meta(client)
 
 
 if __name__ == "__main__":
